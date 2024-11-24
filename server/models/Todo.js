@@ -23,6 +23,18 @@ const todoSchema = new mongoose.Schema({
         type: String,
         enum: ['low', 'normal', 'high'],
         default: 'normal'
+    },
+    isTeamTodo: {
+        type: Boolean,
+        default: false
+    },
+    lastCompletedBy: {
+        type: String,
+        default: null
+    },
+    lastCompletedAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true
