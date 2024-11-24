@@ -163,4 +163,75 @@ router.patch('/:id/toggle', auth, async (req, res) => {
     }
 });
 
+// Get user's todo statistics
+router.get('/stats', auth, async (req, res) => {
+    try {
+        const stats = await Todo.aggregate([
+            {
+                $match: {
+                    $or: [
+                        { userId: req.user._id },
+                        { isTeamTodo: true }
+                    ]
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: 1 },
+                    completed: {
+                        $sum: {
+                            $cond: [{ $eq: ['$completed', true] }, 1, 0]
+                        }
+                    },
+                    personalTodos: {
+                        $sum: {
+                            $cond: [{ $eq: ['$isTeamTodo', false] }, 1, 0]
+                        }
+                    },
+                    teamTodos: {
+                        $sum: {
+                            $cond: [{ $eq: ['$isTeamTodo', true] }, 1, 0]
+                        }
+                    },
+                    highPriority: {
+                        $sum: {
+                            $cond: [{ $eq: ['$priority', 'high'] }, 1, 0]
+                        }
+                    }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    total: 1,
+                    completed: 1,
+                    pending: { $subtract: ['$total', '$completed'] },
+                    personalTodos: 1,
+                    teamTodos: 1,
+                    highPriority: 1,
+                    completionRate: {
+                        $multiply: [
+                            { $divide: ['$completed', '$total'] },
+                            100
+                        ]
+                    }
+                }
+            }
+        ]);
+
+        res.json(stats[0] || {
+            total: 0,
+            completed: 0,
+            pending: 0,
+            personalTodos: 0,
+            teamTodos: 0,
+            highPriority: 0,
+            completionRate: 0
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;
