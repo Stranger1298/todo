@@ -62,7 +62,7 @@ function TodoApp() {
               }`}
               onClick={() => setActiveTab('team-todos')}
             >
-              Team's Todos
+              Team&apos;s Todos
             </button>
           </div>
         </div>
@@ -93,7 +93,7 @@ function TodoApp() {
 
           {/* Other Users' Todos Section */}
           <div className={`${activeTab === 'my-todos' ? 'hidden md:block' : ''}`}>
-            <h2 className="text-xl font-semibold mb-4">Team's Todos</h2>
+            <h2 className="text-xl font-semibold mb-4">Team&apos;s Todos</h2>
             <div className="flex flex-col gap-y-3">
               {isLoading ? (
                 <TodoSkeleton />
