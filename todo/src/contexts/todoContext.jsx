@@ -5,8 +5,6 @@ import { useUser } from "./userContext.jsx";
 
 const TodoContext = createContext({
     todos: [],
-    userTodos: [],
-    otherUsersTodos: [],
     addTodo: (todo) => {},
     updateTodo: (id, todo) => {},
     deleteTodo: (id) => {},
@@ -32,13 +30,6 @@ export const TodoProvider = ({ children }) => {
     const [todos, setTodos] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const { user } = useUser();
-
-    // Memoized filtered todos
-    const userTodos = todos.filter(todo => todo.userId === user?.id)
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    const otherUsersTodos = todos.filter(todo => todo.userId !== user?.id)
-        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     // Handle storage sync
     const handleStorageUpdate = useCallback((newTodos) => {
@@ -67,7 +58,6 @@ export const TodoProvider = ({ children }) => {
             const newTodo = {
                 id: Date.now(),
                 userId: user?.id,
-                userName: user?.name,
                 createdAt: new Date().toISOString(),
                 lastModified: new Date().toISOString(),
                 ...todo
@@ -128,14 +118,14 @@ export const TodoProvider = ({ children }) => {
     const toggleComplete = useCallback((id) => {
         try {
             const success = saveTodos(prevTodos => 
-                prevTodos.map(prevTodo => 
-                    prevTodo.id === id && prevTodo.userId === user?.id
+                prevTodos.map(todo => 
+                    todo.id === id && todo.userId === user?.id
                         ? { 
-                            ...prevTodo, 
-                            completed: !prevTodo.completed,
+                            ...todo, 
+                            completed: !todo.completed,
                             lastModified: new Date().toISOString()
                         }
-                        : prevTodo
+                        : todo
                 )
             );
             
@@ -154,7 +144,8 @@ export const TodoProvider = ({ children }) => {
             setIsLoading(true);
             try {
                 const savedTodos = JSON.parse(localStorage.getItem("todos")) || [];
-                setTodos(savedTodos);
+                const userTodos = savedTodos.filter(todo => todo.userId === user?.id);
+                setTodos(userTodos);
             } catch (error) {
                 console.error("Error loading todos:", error);
                 setTodos([]);
@@ -163,19 +154,18 @@ export const TodoProvider = ({ children }) => {
             }
         };
 
-        loadTodos();
-        
-        // Set up periodic sync
-        const syncInterval = setInterval(loadTodos, 2000);
-        return () => clearInterval(syncInterval);
-    }, []);
+        if (user) {
+            loadTodos();
+        } else {
+            setTodos([]);
+            setIsLoading(false);
+        }
+    }, [user]);
 
     return (
         <TodoContext.Provider 
             value={{
-                todos,
-                userTodos,
-                otherUsersTodos,
+                todos: todos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)),
                 addTodo,
                 updateTodo,
                 deleteTodo,
