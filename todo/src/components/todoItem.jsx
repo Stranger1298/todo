@@ -20,6 +20,7 @@ function TodoItem({ todo, readonly = false }) {
   }
 
   const formatDate = (dateString) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
       month: 'short',
@@ -28,6 +29,24 @@ function TodoItem({ todo, readonly = false }) {
       minute: '2-digit'
     }).format(date);
   }
+
+  const getDueStatus = () => {
+    if (!todo.dueDate || todo.completed) return null;
+    
+    const now = new Date();
+    const dueDate = new Date(todo.dueDate);
+    const timeDiff = dueDate - now;
+    const hoursLeft = timeDiff / (1000 * 60 * 60);
+
+    if (timeDiff < 0) {
+      return { status: 'overdue', color: 'text-red-500' };
+    } else if (hoursLeft <= 24) {
+      return { status: 'due-soon', color: 'text-yellow-500' };
+    }
+    return { status: 'upcoming', color: 'text-green-500' };
+  }
+
+  const dueStatus = getDueStatus();
 
   return (
     <div
@@ -59,6 +78,12 @@ function TodoItem({ todo, readonly = false }) {
           <span>Created: {formatDate(todo.createdAt)}</span>
           {todo.lastModified && todo.lastModified !== todo.createdAt && (
             <span>• Modified: {formatDate(todo.lastModified)}</span>
+          )}
+          {todo.dueDate && (
+            <span className={`${dueStatus?.color || ''}`}>
+              • Due: {formatDate(todo.dueDate)}
+              {dueStatus && ` (${dueStatus.status})`}
+            </span>
           )}
         </div>
       </div>
